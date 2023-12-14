@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 class GameScreen extends StatefulWidget {
@@ -5,56 +8,99 @@ class GameScreen extends StatefulWidget {
   _GameScreenState createState() => _GameScreenState();
 }
 
-class _GameScreenState extends State<GameScreen> {
-  double wheelRotationAngle = 0.0;
-  double pickerRotationAngle = 0.0;
+class _GameScreenState extends State<GameScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _animation;
+
+  double wheelRotationAngle = 360.0;
+  bool isSpinning = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: Duration(seconds: 1),
+    );
+
+    _animation = Tween(begin: 0.0, end: 5.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeOutQuint, // You can experiment with different curves
+      ),
+    )..addListener(() {
+      setState(() {
+        wheelRotationAngle = _animation.value * 360.0;
+      });
+    });
+  }
 
   void _spinWheel() {
-    setState(() {
-      // Rotate the wheel by a random angle
-      wheelRotationAngle = wheelRotationAngle + 45.0;
-      // Keep the picker stationary
-      pickerRotationAngle = pickerRotationAngle - 45.0;
-    });
+    if (!isSpinning) {
+      setState(() {
+        isSpinning = true;
+      });
+
+      _animationController.forward(from: 0.0);
+
+      Timer(Duration(seconds: 1), () {
+        setState(() {
+          isSpinning = false;
+        });
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Spin the Wheel'),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 450,
-              height: 450,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Picker Image
-                  Transform.rotate(
-                    angle: pickerRotationAngle * (3.14 / 180), // Convert to radians
-                    child: Image.asset('assets/picker.png', width: 20, height: 20),
-                  ),
-                  // Wheel Image
-                  Transform.rotate(
-                    angle: wheelRotationAngle * (3.14 / 180), // Convert to radians
-                    child: Image.asset('assets/wheel.png'), // Replace with your wheel image asset
-                  ),
-                ],
+      body: Container(
+        color: Color(0xFF0A1826), // Set background color to #16202C
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Logo (replace 'assets/logo.png' with your logo asset)
+              Image.asset('assets/text.png', width: 300, height: 100),
+              SizedBox(height: 20),
+              Container(
+                width: 450,
+                height: 450,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Wheel Image
+                    Transform.rotate(
+                      angle: wheelRotationAngle * (pi / 180.0),
+                      child: Image.asset('assets/wheel.png',
+                          width: 350, height: 350),
+                    ),
+                    // Picker Image
+                    Positioned(
+                      top: -200, // Adjust the top position as needed
+                      child: Image.asset('assets/picker.png',
+                          width: 500, height: 500),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _spinWheel,
-              child: Text('Spin the Wheel'),
-            ),
-          ],
+              SizedBox(height: 30),
+              // Image Button
+              InkWell(
+                onTap: _spinWheel,
+                child: Image.asset('assets/btn.png', width: 280, height: 100),
+              ),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 }
