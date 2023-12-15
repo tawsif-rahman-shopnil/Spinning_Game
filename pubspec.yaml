@@ -45,7 +45,18 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^2.0.0
+  flutter_lints: 
+  intl:  
+  http:  
+  webview_flutter: 
+  device_info: 
+  android_play_install_referrer:
+  sizer: 
+  flutter_hooks: 
+  url_launcher: 
+  android_intent:
+  hooks_riverpod:
+  permission_handler:
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -58,6 +69,9 @@ flutter:
     - assets/text.png
     - assets/btn.png
     - assets/bg.png
+    - assets/oflnbtn.png
+    - assets/onlnbtn.png
+    - assets/back.png
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.

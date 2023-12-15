@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:spinning_game/splash_screen.dart'; // Import your SplashScreen file
 
 class GameScreen extends StatefulWidget {
   @override
@@ -52,6 +53,13 @@ class _GameScreenState extends State<GameScreen>
     }
   }
 
+  void _goBackToSplashScreen() {
+    // Navigate back to the SplashScreen using Navigator
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (context) => SplashScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -90,6 +98,12 @@ class _GameScreenState extends State<GameScreen>
               InkWell(
                 onTap: _spinWheel,
                 child: Image.asset('assets/btn.png', width: 280, height: 100),
+              ),
+              SizedBox(height: 20),
+              // Back Button
+              GestureDetector(
+                onTap: _goBackToSplashScreen,
+                child: Image.asset('assets/back.png', width: 50, height: 50),
               ),
             ],
           ),

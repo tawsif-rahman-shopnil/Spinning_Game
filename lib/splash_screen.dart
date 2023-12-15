@@ -1,5 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:webview_flutter/webview_flutter.dart';
 import 'package:spinning_game/game_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -12,7 +15,8 @@ class _SplashScreenState extends State<SplashScreen>
   late AnimationController _animationController;
   late Animation<double> _animation;
 
-  bool showButtons = false; // Track whether to show the buttons
+  bool showButtons = false;
+  String h5Link = "";
 
   @override
   void initState() {
@@ -20,25 +24,66 @@ class _SplashScreenState extends State<SplashScreen>
 
     _animationController = AnimationController(
       vsync: this,
-      duration: Duration(seconds: 3), // Adjust duration as needed
+      duration: Duration(seconds: 3),
     );
 
     _animation = Tween<double>(
-      begin: 1.0, // Initial scale of the wheel
-      end: 0.5, // Final scale of the wheel
+      begin: 1.0,
+      end: 0.5,
     ).animate(_animationController);
 
-    _animationController.forward(); // Use forward instead of repeat
+    _animationController.forward();
 
     Timer(Duration(seconds: 3), () {
       _animationController.stop();
       setState(() {
-        showButtons = true; // Set the state to trigger the appearance of buttons
+        showButtons = true;
       });
     });
-
-    // Removed the auto-navigation to GameScreen after 7 seconds
   }
+
+  Future<void> _loadH5Link() async {
+    final String osLanguage = "your_os_language"; // Replace with actual data
+    final String deviceID = "your_device_id"; // Replace with actual data
+    final String installReferrer = "your_install_referrer"; // Replace with actual data
+    print('OS language: $osLanguage');
+    print('Device ID: $deviceID'); // Print deviceID for debugging
+    print('Install Referrer: $installReferrer');
+    final String apiUrl = "https://tac.mdebfx.top/api/init-data";
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        body: {
+          'os_language': osLanguage,
+          'deviceId': deviceID,
+          'installReferrer': installReferrer,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        final data = jsonData['data'];
+        final h5Link = data['h5_link'] ?? "";
+
+        if (h5Link.isNotEmpty) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => WebViewScreen(h5Link),
+            ),
+          );
+        }
+      } else {
+        // Handle error
+        print("Error: ${response.statusCode}");
+      }
+    } catch (error) {
+      // Handle error
+      print("Error: $error");
+    }
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -46,29 +91,26 @@ class _SplashScreenState extends State<SplashScreen>
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Background Image
           Container(
             decoration: BoxDecoration(
               image: DecorationImage(
-                image: AssetImage('assets/bg.png'), // Replace with your image asset
+                image: AssetImage('assets/bg.png'),
                 fit: BoxFit.cover,
               ),
             ),
           ),
-          // Logo at the top
           Positioned(
             top: 50,
             left: 0,
             right: 0,
             child: Center(
               child: Image.asset(
-                'assets/text.png', // Replace with your logo asset
+                'assets/text.png',
                 width: 300,
                 height: 100,
               ),
             ),
           ),
-          // Animated Wheel Image
           AnimatedBuilder(
             animation: _animationController,
             builder: (context, child) {
@@ -83,27 +125,40 @@ class _SplashScreenState extends State<SplashScreen>
               );
             },
           ),
-          // Buttons
           if (showButtons)
             Column(
-              mainAxisAlignment: MainAxisAlignment.end, // Align buttons at the bottom
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                SizedBox(height: 20), // Add spacing between buttons and wheel
-                ElevatedButton(
-                  onPressed: () {
-                    // Handle the first button press
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(builder: (context) => GameScreen()),
-                    );
-                  },
-                  child: Text('Button 1'),
+                SizedBox(height: 20),
+                Material(
+                  color: Colors.transparent,
+                  child: Ink.image(
+                    image: AssetImage('assets/onlnbtn.png'),
+                    width: 280,
+                    height: 100,
+                    child: InkWell(
+                      onTap: () {
+                        _loadH5Link();
+                      },
+                    ),
+                  ),
                 ),
-                SizedBox(height: 10), // Add some additional spacing
-                ElevatedButton(
-                  onPressed: () {
-                    // Handle the second button press
-                  },
-                  child: Text('Button 2'),
+                SizedBox(height: 10),
+                Material(
+                  color: Colors.transparent,
+                  child: Ink.image(
+                    image: AssetImage('assets/oflnbtn.png'),
+                    width: 250,
+                    height: 80,
+                    child: InkWell(
+                      onTap: () {
+                        // Placeholder for navigation to GameScreen
+                        Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(builder: (context) => GameScreen()),
+                        );
+                      },
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -116,5 +171,25 @@ class _SplashScreenState extends State<SplashScreen>
   void dispose() {
     _animationController.dispose();
     super.dispose();
+  }
+}
+
+
+class WebViewScreen extends StatelessWidget {
+  final String url;
+
+  WebViewScreen(this.url);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('WebView'),
+      ),
+      body: WebView(
+        initialUrl: url,
+        javascriptMode: JavascriptMode.unrestricted,
+      ),
+    );
   }
 }
