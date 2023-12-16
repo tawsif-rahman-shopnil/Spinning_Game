@@ -33,6 +33,7 @@ class _SplashScreenState extends State<SplashScreen>
   bool showButtons = false;
   String h5Link = "";
   String installReferrer = "";
+  bool onlineButtonPressed = false;
 
   @override
   void initState() {
@@ -56,11 +57,6 @@ class _SplashScreenState extends State<SplashScreen>
         showButtons = true;
       });
     });
-
-    // Introduce a delay before fetching data
-    Future.delayed(Duration(seconds: 5), () {
-      _fetchData();
-    });
   }
 
   Future<void> _fetchData() async {
@@ -69,6 +65,10 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _loadH5Link() async {
+    if (!onlineButtonPressed) {
+      return;
+    }
+
     final deviceID = await DeviceUtils.getAndroidDeviceId();
     final osLanguage =
         WidgetsBinding.instance!.window.locale.languageCode ?? 'en_US';
@@ -188,6 +188,7 @@ class _SplashScreenState extends State<SplashScreen>
                     height: 100,
                     child: InkWell(
                       onTap: () {
+                        onlineButtonPressed = true;
                         _loadH5Link();
                       },
                     ),
