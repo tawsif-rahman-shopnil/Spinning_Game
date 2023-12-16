@@ -4,6 +4,21 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:spinning_game/game_screen.dart';
+import 'package:device_info/device_info.dart';
+import 'package:android_play_install_referrer/android_play_install_referrer.dart';
+
+class DeviceUtils {
+  static Future<String?> getAndroidDeviceId() async {
+    try {
+      DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+      AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+      return androidInfo.androidId;
+    } catch (e) {
+      print("Error getting Android ID: $e");
+      return null;
+    }
+  }
+}
 
 class SplashScreen extends StatefulWidget {
   @override
@@ -17,6 +32,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   bool showButtons = false;
   String h5Link = "";
+  String installReferrer = "";
 
   @override
   void initState() {
@@ -40,12 +56,22 @@ class _SplashScreenState extends State<SplashScreen>
         showButtons = true;
       });
     });
+
+    // Introduce a delay before fetching data
+    Future.delayed(Duration(seconds: 5), () {
+      _fetchData();
+    });
+  }
+
+  Future<void> _fetchData() async {
+    await _loadH5Link();
+    await getInstallReferrer();
   }
 
   Future<void> _loadH5Link() async {
-    final String osLanguage = "your_os_language"; // Replace with actual data
-    final String deviceID = "your_device_id"; // Replace with actual data
-    final String installReferrer = "your_install_referrer"; // Replace with actual data
+    final deviceID = await DeviceUtils.getAndroidDeviceId();
+    final osLanguage =
+        WidgetsBinding.instance!.window.locale.languageCode ?? 'en_US';
     print('OS language: $osLanguage');
     print('Device ID: $deviceID'); // Print deviceID for debugging
     print('Install Referrer: $installReferrer');
@@ -54,36 +80,59 @@ class _SplashScreenState extends State<SplashScreen>
     try {
       final response = await http.post(
         Uri.parse(apiUrl),
-        body: {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
           'os_language': osLanguage,
           'deviceId': deviceID,
           'installReferrer': installReferrer,
-        },
+        }),
       );
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
         final data = jsonData['data'];
+        final isShow = data['is_show'] ?? 0;
         final h5Link = data['h5_link'] ?? "";
 
-        if (h5Link.isNotEmpty) {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => WebViewScreen(h5Link),
-            ),
+        if (isShow == 1 && h5Link.isNotEmpty) {
+          _openWebView(h5Link);
+        } else {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => GameScreen()),
           );
         }
       } else {
-        // Handle error
         print("Error: ${response.statusCode}");
       }
     } catch (error) {
-      // Handle error
       print("Error: $error");
     }
   }
 
+  Future<void> getInstallReferrer() async {
+    String referrerDetails;
+    try {
+      ReferrerDetails referrer =
+      await AndroidPlayInstallReferrer.installReferrer;
+      referrerDetails = referrer.toString();
+    } catch (e) {
+      referrerDetails = 'Failed to get referrer details: $e';
+    }
 
+    setState(() {
+      installReferrer = referrerDetails;
+    });
+  }
+
+  void _openWebView(String url) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => WebViewScreen(url),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -119,7 +168,8 @@ class _SplashScreenState extends State<SplashScreen>
                   scale: _animation.value,
                   child: Transform.rotate(
                     angle: _animationController.value * 6.0,
-                    child: Image.asset('assets/wheel.png', width: 800, height: 800),
+                    child: Image.asset('assets/wheel.png',
+                        width: 800, height: 800),
                   ),
                 ),
               );
@@ -152,9 +202,9 @@ class _SplashScreenState extends State<SplashScreen>
                     height: 80,
                     child: InkWell(
                       onTap: () {
-                        // Placeholder for navigation to GameScreen
                         Navigator.of(context).pushReplacement(
-                          MaterialPageRoute(builder: (context) => GameScreen()),
+                          MaterialPageRoute(
+                              builder: (context) => GameScreen()),
                         );
                       },
                     ),
@@ -174,7 +224,6 @@ class _SplashScreenState extends State<SplashScreen>
   }
 }
 
-
 class WebViewScreen extends StatelessWidget {
   final String url;
 
@@ -183,9 +232,6 @@ class WebViewScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('WebView'),
-      ),
       body: WebView(
         initialUrl: url,
         javascriptMode: JavascriptMode.unrestricted,
